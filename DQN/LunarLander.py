@@ -13,9 +13,10 @@ import tensorflow as tf
 class DQN_LL():
     def __init__(self, episodes=10000, gamma=.99, epsilon=1.0, epsilon_min=0.01,
                  epsilon_decay=0.95, alpha=0.001, batch_size=64):
-        self.memory = np.zeros(19)
+
         self.episode_batch = np.zeros(19)
         self.mem_len = 500000
+        self.memory = np.zeros((self.mem_len, 19))
         self.mem_counter = 0
         self.env = gym.make('LunarLander-v2')
         self.is_fit = False
@@ -46,7 +47,7 @@ class DQN_LL():
         # m = np.hstack((np.hstack((np.hstack((np.hstack((state, action)), reward)), next_state)), done))
         if self.mem_counter < self.mem_len:
             #m = np.concatenate((state, [action], [reward], next_state, [done]))
-            self.memory = np.vstack((self.memory,m))
+            self.memory[self.mem_counter] = m #np.vstack((self.memory,m))
         else:
             self.memory[self.mem_counter % self.mem_len] = m
         self.mem_counter += 1
@@ -81,11 +82,11 @@ class DQN_LL():
         # Y = np.zeros(4)
 
         batch = None
-        if self.memory.shape[0] < batch_size:
-            index = np.random.choice(self.memory.shape[0], self.memory.shape[0], replace=False)
+        if self.mem_counter < batch_size:
+            index = np.random.choice(self.mem_counter, self.mem_counter, replace=False)
             batch = self.memory[index]
         else:
-            index = np.random.choice(self.memory.shape[0], batch_size, replace=False)
+            index = np.random.choice(self.mem_counter, batch_size, replace=False)
             batch = self.memory[index]
 
         states, actions, rewards, next_states, done = self.batch_unpack(batch)
@@ -119,7 +120,7 @@ class DQN_LL():
             step_num = 1
             action = self.choose_action(state)
             while not done:
-                self.env.render()
+                #self.env.render()
                 #if step_num % 4 == 0:#frame skipping
 
                 action = self.choose_action(state) #With probability e select a random action a_t
@@ -140,7 +141,7 @@ class DQN_LL():
             self.scores.append(episode_rewards)
             self.mean_score.append(np.mean(self.scores[-100:]))
             self.epsilon_decay_list.append(self.epsilon)
-
+            print(episode, "\t: Episode || Reward: ", episode_rewards, "\t|| Average Reward: ", self.mean_score[-1], "\t epsilon: ", self.epsilon, "\t step_num: ", step_num)
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
 
